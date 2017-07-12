@@ -1,0 +1,301 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>fisher_derivation_2d</title><meta name="generator" content="MATLAB 9.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2017-07-11"><meta name="DC.source" content="fisher_derivation_2d.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Differential equations of system</a></li><li><a href="#3">Solve equations using numerical ODE solver 45 (nonstiff runge kutta)</a></li><li><a href="#4">Marginal probability density functions</a></li><li><a href="#5">Phase space plot</a></li><li><a href="#6">System component plots</a></li><li><a href="#7">State histogram</a></li><li><a href="#8">Marginal PDF's</a></li><li><a href="#9">Marginal CDF's</a></li></ul></div><pre class="codeinput">close <span class="string">all</span>
+</pre><h2>Differential equations of system<a name="2"></a></h2><pre class="codeinput">g1 = 1;
+m2 = 1;
+l12 = 0.01;
+g21 = 0.01;
+k = 625;
+B = 0.005;
+
+deq = @(t,x) [g1.*x(1).*(1 - (x(1)./k)) - (l12.*x(1).*x(2))./(1 + B*x(1));<span class="keyword">...</span>
+    (g21.*x(1).*x(2))./(1 + B*x(1)) - m2.*x(2)];
+</pre><h2>Solve equations using numerical ODE solver 45 (nonstiff runge kutta)<a name="3"></a></h2><pre class="codeinput">x0 = [121.3297, 156.0928];
+T = 11.2;
+options = odeset(<span class="string">'RelTol'</span>,1e-10,<span class="string">'Stats'</span>,<span class="string">'on'</span>);
+[t, s] = ode45(deq,[0 T], x0, options);
+</pre><pre class="codeoutput">66 successful steps
+2 failed attempts
+409 function evaluations
+</pre><h2>Marginal probability density functions<a name="4"></a></h2><pre class="codeinput">dsdt = zeros(size(s));
+<span class="keyword">for</span> i = 1:size(t,1)
+    dsdt(i,:) = deq(t(i,1),s(i,:)')';
+<span class="keyword">end</span>
+pdf_s1 = (1/T)*(1./dsdt(:,1));
+pdf_s2 = (1/T)*(1./dsdt(:,2));
+
+<span class="comment">% Kolmogorov 2nd axiom</span>
+pdf_s1_int = trapz(s(:,1), pdf_s1)
+pdf_s2_int = trapz(s(:,2), pdf_s2)
+</pre><pre class="codeoutput">
+pdf_s1_int =
+
+    1.0000
+
+
+pdf_s2_int =
+
+    1.0001
+
+</pre><h2>Phase space plot<a name="5"></a></h2><pre class="codeinput">figure()
+plot(s(:,1), s(:,2))
+xlabel(<span class="string">'s_1(t)'</span>)
+ylabel(<span class="string">'s_2(t)'</span>)
+</pre><img vspace="5" hspace="5" src="fisher_derivation_2d_01.png" alt=""> <h2>System component plots<a name="6"></a></h2><pre class="codeinput">figure()
+subplot(1,2,1)
+plot(t, s(:,1))
+xlabel(<span class="string">'t'</span>)
+ylabel(<span class="string">'s_1(t)'</span>)
+subplot(1,2,2)
+plot(t, s(:,2))
+xlabel(<span class="string">'t'</span>)
+ylabel(<span class="string">'s_2(t)'</span>)
+</pre><img vspace="5" hspace="5" src="fisher_derivation_2d_02.png" alt=""> <h2>State histogram<a name="7"></a></h2><pre class="codeinput">figure()
+ds1 = range(s(:,1))/20;
+ds2 = range(s(:,2))/20;
+edge_s1 = min(s(:,1)):ds1:max(s(:,1));
+edge_s2 = min(s(:,2)):ds2:max(s(:,2));
+center_s1 = edge_s1(1:end-1) + ds1/2;
+center_s2 = edge_s2(1:end-1) + ds2/2;
+hist3(s, {edge_s1 edge_s2});
+xlabel(<span class="string">'s_1'</span>)
+ylabel(<span class="string">'s_2'</span>)
+zlabel(<span class="string">'number of occurences'</span>)
+
+<span class="comment">% N = hist3(s, {edge_s1 edge_s2});</span>
+<span class="comment">% pdf = N./(sum(sum(N))*ds1*ds2);</span>
+</pre><img vspace="5" hspace="5" src="fisher_derivation_2d_03.png" alt=""> <h2>Marginal PDF's<a name="8"></a></h2><pre class="codeinput">figure()
+subplot(1,2,1)
+N = histcounts(s(:,1), edge_s1);
+normHist_s1 = N/sum(N*ds1);
+bar(center_s1, normHist_s1, 1)
+ylimits = ylim();
+hold <span class="string">on</span>
+plot(s(:,1), pdf_s1, <span class="string">'-r'</span>, <span class="string">'LineWidth'</span>, 2)
+xlim([min(s(:,1)), max(s(:,1))])
+ylim(ylimits)
+xlabel(<span class="string">'s_1'</span>)
+ylabel(<span class="string">'probability density function, p(s_1)'</span>)
+legend(<span class="string">'sample'</span>, <span class="string">'analytical'</span>)
+
+subplot(1,2,2)
+N = histcounts(s(:,2), edge_s2);
+normHist_s2 = N/sum(N*ds2);
+bar(center_s2, normHist_s2, 1)
+ylimits = ylim();
+hold <span class="string">on</span>
+plot(s(:,2), pdf_s2, <span class="string">'-r'</span>, <span class="string">'LineWidth'</span>, 2)
+xlim([min(s(:,2)), max(s(:,2))])
+ylim(ylimits)
+xlabel(<span class="string">'s_2'</span>)
+ylabel(<span class="string">'probability density function, p(s_2)'</span>)
+legend(<span class="string">'sample'</span>, <span class="string">'analytical'</span>)
+</pre><img vspace="5" hspace="5" src="fisher_derivation_2d_04.png" alt=""> <h2>Marginal CDF's<a name="9"></a></h2><pre class="codeinput">fun_s1 = @(iEnd) trapz(s(1:iEnd,1), pdf_s1(1:iEnd));
+fun_s2 = @(iEnd) trapz(s(1:iEnd,2), pdf_s2(1:iEnd));
+cdf_s1 = arrayfun(fun_s1, 2:length(t));
+cdf_s2 = arrayfun(fun_s2, 2:length(t));
+
+figure()
+subplot(1,2,1)
+ecdf(s(:,1))
+hold <span class="string">on</span>
+stairs(linspace(min(s(:,1)), max(s(:,1)), length(cdf_s1)), cdf_s1)
+ylim([0,1])
+xlabel(<span class="string">'s_1'</span>)
+ylabel(<span class="string">'cdf s_1'</span>)
+legend(<span class="string">'sample'</span>, <span class="string">'analytical'</span>)
+
+subplot(1,2,2)
+ecdf(s(:,2))
+hold <span class="string">on</span>
+stairs(linspace(min(s(:,2)), max(s(:,2)), length(cdf_s2)), cdf_s2)
+ylim([0,1])
+xlabel(<span class="string">'s_2'</span>)
+ylabel(<span class="string">'cdf s_2'</span>)
+legend(<span class="string">'sample'</span>, <span class="string">'analytical'</span>)
+</pre><img vspace="5" hspace="5" src="fisher_derivation_2d_05.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2016a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+close all
+
+%% Differential equations of system
+g1 = 1;
+m2 = 1;
+l12 = 0.01;
+g21 = 0.01;
+k = 625;
+B = 0.005;
+
+deq = @(t,x) [g1.*x(1).*(1 - (x(1)./k)) - (l12.*x(1).*x(2))./(1 + B*x(1));...
+    (g21.*x(1).*x(2))./(1 + B*x(1)) - m2.*x(2)];
+
+%% Solve equations using numerical ODE solver 45 (nonstiff runge kutta)
+x0 = [121.3297, 156.0928];
+T = 11.2;
+options = odeset('RelTol',1e-10,'Stats','on');
+[t, s] = ode45(deq,[0 T], x0, options);
+
+%% Marginal probability density functions
+dsdt = zeros(size(s));
+for i = 1:size(t,1)
+    dsdt(i,:) = deq(t(i,1),s(i,:)')';
+end
+pdf_s1 = (1/T)*(1./dsdt(:,1));
+pdf_s2 = (1/T)*(1./dsdt(:,2));
+
+% Kolmogorov 2nd axiom
+pdf_s1_int = trapz(s(:,1), pdf_s1)
+pdf_s2_int = trapz(s(:,2), pdf_s2)
+
+%% Phase space plot
+figure()
+plot(s(:,1), s(:,2))
+xlabel('s_1(t)')
+ylabel('s_2(t)')
+
+%% System component plots
+figure()
+subplot(1,2,1)
+plot(t, s(:,1))
+xlabel('t')
+ylabel('s_1(t)')
+subplot(1,2,2)
+plot(t, s(:,2))
+xlabel('t')
+ylabel('s_2(t)')
+
+%% State histogram
+figure()
+ds1 = range(s(:,1))/20;
+ds2 = range(s(:,2))/20;
+edge_s1 = min(s(:,1)):ds1:max(s(:,1));
+edge_s2 = min(s(:,2)):ds2:max(s(:,2));
+center_s1 = edge_s1(1:end-1) + ds1/2;
+center_s2 = edge_s2(1:end-1) + ds2/2;
+hist3(s, {edge_s1 edge_s2});
+xlabel('s_1')
+ylabel('s_2')
+zlabel('number of occurences')
+
+% N = hist3(s, {edge_s1 edge_s2});
+% pdf = N./(sum(sum(N))*ds1*ds2);
+
+%% Marginal PDF's
+figure()
+subplot(1,2,1)
+N = histcounts(s(:,1), edge_s1);
+normHist_s1 = N/sum(N*ds1);
+bar(center_s1, normHist_s1, 1)
+ylimits = ylim();
+hold on
+plot(s(:,1), pdf_s1, '-r', 'LineWidth', 2)
+xlim([min(s(:,1)), max(s(:,1))])
+ylim(ylimits)
+xlabel('s_1')
+ylabel('probability density function, p(s_1)')
+legend('sample', 'analytical')
+
+subplot(1,2,2)
+N = histcounts(s(:,2), edge_s2);
+normHist_s2 = N/sum(N*ds2);
+bar(center_s2, normHist_s2, 1)
+ylimits = ylim();
+hold on
+plot(s(:,2), pdf_s2, '-r', 'LineWidth', 2)
+xlim([min(s(:,2)), max(s(:,2))])
+ylim(ylimits)
+xlabel('s_2')
+ylabel('probability density function, p(s_2)')
+legend('sample', 'analytical')
+
+%% Marginal CDF's
+fun_s1 = @(iEnd) trapz(s(1:iEnd,1), pdf_s1(1:iEnd));
+fun_s2 = @(iEnd) trapz(s(1:iEnd,2), pdf_s2(1:iEnd));
+cdf_s1 = arrayfun(fun_s1, 2:length(t));
+cdf_s2 = arrayfun(fun_s2, 2:length(t));
+
+figure()
+subplot(1,2,1)
+ecdf(s(:,1))
+hold on
+stairs(linspace(min(s(:,1)), max(s(:,1)), length(cdf_s1)), cdf_s1)
+ylim([0,1])
+xlabel('s_1')
+ylabel('cdf s_1')
+legend('sample', 'analytical')
+
+subplot(1,2,2)
+ecdf(s(:,2))
+hold on
+stairs(linspace(min(s(:,2)), max(s(:,2)), length(cdf_s2)), cdf_s2)
+ylim([0,1])
+xlabel('s_2')
+ylabel('cdf s_2')
+legend('sample', 'analytical')
+##### SOURCE END #####
+--></body></html>
